@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>PDF Maßband (1:n)</title>
+  <style>
+    :root { font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; padding: 16px; background:#fff; color:#111; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; }
+    label { font-size: 12px; color: #444; display:block; margin-bottom: 4px; }
+    input, select, button {
+      font-size: 16px; padding: 10px 12px; border-radius: 10px; border: 1px solid #ccc;
+      background: #fff;
+    }
+    button { cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    #wrap { display: grid; gap: 12px; max-width: 1100px; margin: 0 auto; }
+    #viewer {
+      position: relative;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f7f7f7;
+      touch-action: none; /* wichtig für iOS Touch */
+    }
+    canvas { display:block; width:100%; height:auto; }
+    #overlay {
+      position:absolute; left:0; top:0; width:100%; height:100%;
+      pointer-events: none;
+    }
+    .muted { color:#666; font-size: 13px; line-height: 1.35; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .pill { display:inline-block; padding: 4px 10px; border:1px solid #ddd; border-radius: 999px; }
+    .kpi { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .kpi .pill strong { font-weight: 700; }
+    .warn { color:#8a5b00; }
+    .ok { color:#0a6; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>PDF auswählen</label>
+          <input id="file" type="file" accept="application/pdf" />
+        </div>
+
+        <div>
+          <label>Seite</label>
+          <select id="pageSelect" disabled></select>
+        </div>
+
+        <div>
+          <label>Zoom</label>
+          <select id="zoomSelect" disabled>
+            <option value="fit">Fit</option>
+            <option value="0.75">75%</option>
+            <option value="1">100%</option>
+            <option value="1.25">125%</option>
+            <option value="1.5">150%</option>
+            <option value="2">200%</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Maßstab (1 : n)</label>
+          <input id="scaleN" type="number" min="1" step="1" value="250" />
+        </div>
+
+        <div>
+          <label>Blattgröße (Print-Annahme)</label>
+          <select id="paperPreset" title="Für 'Auto' wird die Seitengröße aus dem PDF genommen. Für A4/A3/A2/Custom wird mm/Point daraus abgeleitet.">
+            <option value="auto">Auto (aus PDF)</option>
+            <option value="A4">A4 (210×297)</option>
+            <option value="A3">A3 (297×420)</option>
+            <option value="A2">A2 (420×594)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Custom (mm): Breite × Höhe</label>
+          <div class="row" style="gap:8px">
+            <input id="customW" type="number" min="10" step="1" value="210" style="width:110px" />
+            <span class="muted">×</span>
+            <input id="customH" type="number" min="10" step="1" value="297" style="width:110px" />
+          </div>
+        </div>
+
+        <div>
+          <label>Aktion</label>
+          <div class="row">
+            <button id="clear" disabled>Zurücksetzen</button>
+            <button id="copy" disabled>Ergebnis kopieren</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="muted">
+        Messen: <span class="pill">Tippe Punkt A</span> → <span class="pill">Tippe Punkt B</span>.
+        Ausgabe = Papiermaß (mm/cm) + Realmaß (m) aus Maßstab 1:n. Für iPhone/iPad bitte über <span class="mono">https://</span> (z. B. GitHub Pages) öffnen.
+      </div>
+      <div id="status" style="margin-top:10px" class="muted"></div>
+      <div id="kpis" class="kpi" style="margin-top:10px"></div>
+    </div>
+
+    <div id="viewer">
+      <canvas id="pdfCanvas"></canvas>
+      <svg id="overlay"></svg>
+    </div>
+
+    <div class="card muted">
+      <div><strong>Hinweis zur Genauigkeit</strong></div>
+      <div style="margin-top:6px">
+        Ohne Kalibrierung kann die App nur dann “originalgetreu” sein, wenn dein PDF die richtige Seiten-/Plotgröße repräsentiert (druckrichtig).
+        Bei Plänen ist das häufig ok, aber nicht garantiert (CropBox, eingebettete Rasterbilder, etc.).
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // PDF.js via CDN (ESM). Quellen:
+    // - cdnjs Liste: https://cdnjs.com/libraries/pdf.js
+    // - mozilla releases: https://github.com/mozilla/pdf.js/releases
+    import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.mjs";
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.worker.mjs";
+
+    const $ = (id) => document.getElementById(id);
+
+    const fileInput   = $("file");
+    const pageSelect  = $("pageSelect");
+    const zoomSelect  = $("zoomSelect");
+    const scaleNInput = $("scaleN");
+    const paperPreset = $("paperPreset");
+    const customW     = $("customW");
+    const customH     = $("customH");
+    const clearBtn    = $("clear");
+    const copyBtn     = $("copy");
+    const statusEl    = $("status");
+    const kpisEl      = $("kpis");
+
+    const viewer = $("viewer");
+    const canvas = $("pdfCanvas");
+    const ctx    = canvas.getContext("2d", { alpha: false });
+    const overlay = $("overlay");
+
+    let pdfDoc = null;
+    let page = null;
+    let pageNum = 1;
+
+    // Render settings
+    let userZoom = "fit";      // 'fit' or number
+    let renderScale = 1;       // PDF points -> canvas px (CSS pixels)
+    let viewport = null;
+
+    // Measurement state
+    let A = null; // {xPt, yPt}
+    let B = null;
+
+    // Helpers
+    function setStatus(html, cls="") {
+      statusEl.className = "muted " + (cls || "");
+      statusEl.innerHTML = html;
+    }
+
+    function resetMeasure() {
+      A = null; B = null;
+      overlay.innerHTML = "";
+      kpisEl.innerHTML = "";
+      copyBtn.disabled = true;
+    }
+
+    function mmPerPointFromPaper(pageWidthPt, pageHeightPt) {
+      // Default: Auto from PDF points => PDF points are defined as 1/72 inch.
+      // 1 pt = 25.4/72 mm
+      const MM_PER_PT = 25.4 / 72;
+
+      const preset = paperPreset.value;
+      if (preset === "auto") return { mmPerPt: MM_PER_PT, note: "Auto (PDF points → mm via 1/72 inch)", warn: false };
+
+      let wmm, hmm;
+      if (preset === "A4") { wmm=210; hmm=297; }
+      if (preset === "A3") { wmm=297; hmm=420; }
+      if (preset === "A2") { wmm=420; hmm=594; }
+      if (preset === "custom") {
+        wmm = Number(customW.value || 0);
+        hmm = Number(customH.value || 0);
+      }
+
+      if (!(wmm>0 && hmm>0)) return { mmPerPt: MM_PER_PT, note: "Ungültige Blattgröße → Auto genutzt", warn: true };
+
+      const mmPerPtW = wmm / pageWidthPt;
+      const mmPerPtH = hmm / pageHeightPt;
+      const mmPerPt = (mmPerPtW + mmPerPtH) / 2;
+
+      // Warn if aspect doesn't match well (crop/rotation etc.)
+      const aspectPage = pageWidthPt / pageHeightPt;
+      const aspectPaper = wmm / hmm;
+      const mismatch = Math.abs(aspectPage - aspectPaper) / aspectPaper;
+      const warn = mismatch > 0.03; // >3% difference
+
+      return {
+        mmPerPt,
+        note: `Preset ${preset}: mm/pt aus (${wmm}×${hmm} mm) / (Seite ${pageWidthPt.toFixed(1)}×${pageHeightPt.toFixed(1)} pt)`,
+        warn
+      };
+    }
+
+    function pointsFromCanvasXY(xCss, yCss) {
+      // Canvas internal pixels may differ from CSS pixels due to DPR.
+      const rect = canvas.getBoundingClientRect();
+      const xPx = (xCss - rect.left);
+      const yPx = (yCss - rect.top);
+
+      // Convert CSS px to canvas internal px
+      const xCanvas = xPx * (canvas.width / rect.width);
+      const yCanvas = yPx * (canvas.height / rect.height);
+
+      // Convert canvas px to PDF points: viewport has transform scale = renderScale * devicePixelRatio accounted in canvas
+      // We used viewport = page.getViewport({ scale: renderScale }) and then multiplied canvas size by DPR.
+      // Therefore: PDF pt = canvasPx / (renderScale * DPR)
+      const dpr = window.devicePixelRatio || 1;
+      return { xPt: xCanvas / (renderScale * dpr), yPt: yCanvas / (renderScale * dpr) };
+    }
+
+    function drawOverlay(a, b) {
+      const rect = canvas.getBoundingClientRect();
+      // Convert PDF points to CSS px: pt -> canvas internal px -> CSS px
+      const dpr = window.devicePixelRatio || 1;
+      const x1Canvas = a.xPt * renderScale * dpr;
+      const y1Canvas = a.yPt * renderScale * dpr;
+      const x2Canvas = b.xPt * renderScale * dpr;
+      const y2Canvas = b.yPt * renderScale * dpr;
+
+      const x1Css = x1Canvas * (rect.width / canvas.width);
+      const y1Css = y1Canvas * (rect.height / canvas.height);
+      const x2Css = x2Canvas * (rect.width / canvas.width);
+      const y2Css = y2Canvas * (rect.height / canvas.height);
+
+      overlay.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
+      overlay.innerHTML = `
+        <line x1="${x1Css}" y1="${y1Css}" x2="${x2Css}" y2="${y2Css}" stroke="red" stroke-width="2" />
+        <circle cx="${x1Css}" cy="${y1Css}" r="6" fill="red" />
+        <circle cx="${x2Css}" cy="${y2Css}" r="6" fill="red" />
+      `;
+    }
+
+    function formatResult(paperMm, scaleN) {
+      const paperCm = paperMm / 10;
+      const realM = (paperMm / 1000) * scaleN;
+      const realMm = paperMm * scaleN;
+
+      const parts = [
+        `Papier: ${paperMm.toFixed(1)} mm (${paperCm.toFixed(2)} cm)`,
+        `Real (1:${scaleN}): ${realM.toFixed(3)} m`,
+        `Real: ${realMm.toFixed(0)} mm`,
+      ];
+      return parts.join(" | ");
+    }
+
+    async function render() {
+      if (!pdfDoc) return;
+
+      page = await pdfDoc.getPage(pageNum);
+
+      // Page size in PDF points
+      const baseVp = page.getViewport({ scale: 1 });
+      const pageWidthPt = baseVp.width;
+      const pageHeightPt = baseVp.height;
+
+      // Determine render scale for display
+      const rect = viewer.getBoundingClientRect();
+      const fitScale = rect.width / pageWidthPt;
+      renderScale = (userZoom === "fit") ? fitScale : (fitScale * Number(userZoom));
+
+      viewport = page.getViewport({ scale: renderScale });
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width  = Math.floor(viewport.width * dpr);
+      canvas.height = Math.floor(viewport.height * dpr);
+
+      // CSS size
+      canvas.style.width = viewport.width + "px";
+      canvas.style.height = viewport.height + "px";
+
+      // Scale context for DPR
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+
+      const renderTask = page.render({ canvasContext: ctx, viewport });
+      await renderTask.promise;
+
+      // Update status + mm/pt note
+      const paper = mmPerPointFromPaper(pageWidthPt, pageHeightPt);
+      const warnCls = paper.warn ? "warn" : "ok";
+      const warnTxt = paper.warn ? "⚠️ Blatt-/Seitenformat weicht ab (Crop/Rotation möglich)." : "✓";
+      setStatus(`${warnTxt} ${paper.note}<br><span class="mono">Seite: ${pageWidthPt.toFixed(1)}×${pageHeightPt.toFixed(1)} pt</span>`, warnCls);
+
+      resetMeasure();
+      clearBtn.disabled = false;
+      pageSelect.disabled = false;
+      zoomSelect.disabled = false;
+    }
+
+    async function loadPdf(file) {
+      resetMeasure();
+      setStatus("PDF wird geladen…");
+
+      const ab = await file.arrayBuffer();
+      pdfDoc = await pdfjsLib.getDocument({ data: ab }).promise;
+
+      // Fill page select
+      pageSelect.innerHTML = "";
+      for (let i=1; i<=pdfDoc.numPages; i++) {
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = `Seite ${i}`;
+        pageSelect.appendChild(opt);
+      }
+      pageNum = 1;
+      pageSelect.value = "1";
+
+      zoomSelect.value = "fit";
+      userZoom = "fit";
+
+      await render();
+    }
+
+    function updateKpis(a, b) {
+      if (!page || !a || !b) return;
+
+      const baseVp = page.getViewport({ scale: 1 });
+      const paper = mmPerPointFromPaper(baseVp.width, baseVp.height);
+      const scaleN = Math.max(1, Number(scaleNInput.value || 1));
+
+      const dx = b.xPt - a.xPt;
+      const dy = b.yPt - a.yPt;
+      const distPt = Math.hypot(dx, dy);
+      const paperMm = distPt * paper.mmPerPt;
+
+      const res = formatResult(paperMm, scaleN);
+
+      kpisEl.innerHTML = `
+        <span class="pill"><strong>${paperMm.toFixed(1)} mm</strong> Papier</span>
+        <span class="pill"><strong>${(paperMm/10).toFixed(2)} cm</strong> Papier</span>
+        <span class="pill"><strong>${((paperMm/1000)*scaleN).toFixed(3)} m</strong> Real (1:${scaleN})</span>
+        <span class="pill mono">${res}</span>
+      `;
+      copyBtn.disabled = false;
+    }
+
+    // Events
+    fileInput.addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      loadPdf(f).catch(err => {
+        console.error(err);
+        setStatus("Fehler beim Laden. Öffne die Seite per HTTPS (GitHub Pages) und probiere ein anderes PDF.", "warn");
+      });
+    });
+
+    pageSelect.addEventListener("change", async () => {
+      pageNum = Number(pageSelect.value);
+      await render();
+    });
+
+    zoomSelect.addEventListener("change", async () => {
+      userZoom = zoomSelect.value;
+      await render();
+    });
+
+    paperPreset.addEventListener("change", () => {
+      if (!pdfDoc) return;
+      // Only recalculation, no need to re-render; but we reset measurement for clarity.
+      resetMeasure();
+      // Update status note
+      render().catch(console.error);
+    });
+    customW.addEventListener("input", () => { if (paperPreset.value==="custom" && pdfDoc) { resetMeasure(); render().catch(console.error);} });
+    customH.addEventListener("input", () => { if (paperPreset.value==="custom" && pdfDoc) { resetMeasure(); render().catch(console.error);} });
+
+    scaleNInput.addEventListener("input", () => {
+      if (A && B) updateKpis(A,B);
+    });
+
+    clearBtn.addEventListener("click", () => {
+      resetMeasure();
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      if (!(A && B && page)) return;
+      const baseVp = page.getViewport({ scale: 1 });
+      const paper = mmPerPointFromPaper(baseVp.width, baseVp.height);
+      const scaleN = Math.max(1, Number(scaleNInput.value || 1));
+
+      const distPt = Math.hypot(B.xPt - A.xPt, B.yPt - A.yPt);
+      const paperMm = distPt * paper.mmPerPt;
+
+      const text = [
+        "PDF Maßband Ergebnis",
+        `Seite: ${pageNum}`,
+        `Maßstab: 1:${scaleN}`,
+        `Papier: ${paperMm.toFixed(1)} mm (${(paperMm/10).toFixed(2)} cm)`,
+        `Real: ${((paperMm/1000)*scaleN).toFixed(3)} m`,
+      ].join("\n");
+
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus("✓ In Zwischenablage kopiert.", "ok");
+      } catch {
+        // fallback
+        prompt("Kopieren:", text);
+      }
+    });
+
+    // Tap to measure
+    viewer.addEventListener("pointerdown", (ev) => {
+      if (!pdfDoc || !page) return;
+
+      const p = pointsFromCanvasXY(ev.clientX, ev.clientY);
+
+      if (!A) {
+        A = p;
+        setStatus("Punkt A gesetzt. Tippe Punkt B.", "ok");
+        overlay.innerHTML = "";
+        kpisEl.innerHTML = "";
+        copyBtn.disabled = true;
+        return;
+      }
+      B = p;
+      drawOverlay(A, B);
+      updateKpis(A, B);
+      setStatus("✓ Punkt B gesetzt. (Zurücksetzen für neue Messung)", "ok");
+    });
+
+    // Re-render on resize (rotation)
+    let resizeTimer = null;
+    window.addEventListener("resize", () => {
+      if (!pdfDoc) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => render().catch(console.error), 150);
+    });
+  </script>
+</body>
+</html>
