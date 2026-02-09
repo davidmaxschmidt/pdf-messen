@@ -5,296 +5,312 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>PDF Maßband – EBG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,500;9..40,700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ebg-yellow: #FFF200;
-      --ebg-black: #1a1a1a;
-      --ebg-bg: #F5F5F5;
-      --ebg-card: #FFFFFF;
-      --ebg-text: #323130;
-      --ebg-text-sec: #646464;
-      --ebg-border: #E8E6E4;
-      --ebg-border-light: #F3F2F1;
-      --ebg-footer-text: #969696;
-      --ebg-success: #0a6640;
-      --ebg-warn: #8a5b00;
-      --radius: 10px;
-      --shadow: 0 1px 3px rgba(0,0,0,.05), 0 2px 8px rgba(0,0,0,.03);
-      --shadow-h: 0 2px 8px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
+      --yellow: #FFF200; --black: #1a1a1a; --bg: #F5F5F5;
+      --card: #FFFFFF; --text: #323130; --text2: #646464;
+      --border: #E8E6E4; --border-l: #F3F2F1; --ftr: #969696;
+      --hdr-h: 52px; --ftr-h: 36px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
     body {
       font-family: 'DM Sans', -apple-system, system-ui, sans-serif;
-      background: var(--ebg-bg); color: var(--ebg-text);
-      min-height: 100vh; display: flex; flex-direction: column;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column; height: 100vh;
     }
-
-    /* ── HEADER ── */
     .hdr {
-      background: var(--ebg-black); height: 60px;
-      display: flex; align-items: center; padding: 0 20px; gap: 14px;
-      position: sticky; top: 0; z-index: 100;
-      box-shadow: 0 2px 12px rgba(0,0,0,.2);
+      background: var(--black); height: var(--hdr-h);
+      display: flex; align-items: center; padding: 0 16px; gap: 12px;
+      flex-shrink: 0; z-index: 100;
     }
-    .hdr-logo {
-      height: 32px; width: auto;
+    .hdr-logo { height: 28px; width: auto; }
+    .hdr-sep { width: 2px; height: 22px; background: var(--yellow); border-radius: 1px; flex-shrink: 0; }
+    .hdr h1 { color: #fff; font-size: 14px; font-weight: 500; white-space: nowrap; }
+    .hdr h1 b { color: var(--yellow); font-weight: 700; }
+    .hdr-spacer { flex: 1; }
+    .hdr-toggle {
+      background: none; border: 1.5px solid rgba(255,255,255,.2); border-radius: 6px;
+      color: #fff; padding: 5px 10px; font-family: inherit; font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; white-space: nowrap;
     }
-    .hdr-sep { width: 2px; height: 24px; background: var(--ebg-yellow); border-radius: 1px; }
-    .hdr h1 { color: #fff; font-size: 15px; font-weight: 500; letter-spacing: .01em; }
-    .hdr h1 b { color: var(--ebg-yellow); font-weight: 700; }
+    .hdr-toggle:hover { border-color: var(--yellow); color: var(--yellow); }
+    .hdr-toggle.active { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
+    .hdr-toggle svg { width: 14px; height: 14px; }
 
-    /* ── MAIN ── */
-    .main {
-      flex: 1; max-width: 1160px; width: 100%; margin: 0 auto;
-      padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    /* Mode toggle */
+    .mode-toggle {
+      background: none; border: 1.5px solid rgba(255,255,255,.2); border-radius: 6px;
+      color: #fff; padding: 5px 10px; font-family: inherit; font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; white-space: nowrap;
     }
+    .mode-toggle:hover { border-color: var(--yellow); color: var(--yellow); }
+    .mode-toggle.active { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
+    .mode-toggle svg { width: 14px; height: 14px; }
 
-    /* ── CARDS ── */
-    .card {
-      background: var(--ebg-card); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding: 18px;
-      transition: box-shadow .2s;
-      animation: fadeUp .35s ease both;
+    .toolbar {
+      background: var(--card); border-bottom: 1px solid var(--border-l);
+      padding: 10px 16px; flex-shrink: 0; z-index: 90;
+      display: none; overflow-x: auto; overflow-y: hidden;
     }
-    .card:nth-child(2) { animation-delay: .04s; }
-    .card:nth-child(3) { animation-delay: .08s; }
-    @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-
-    .card-lbl {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .1em; color: var(--ebg-text-sec); margin-bottom: 14px;
-      display: flex; align-items: center; gap: 7px;
-    }
-    .card-lbl::before {
-      content: ''; display: block; width: 3px; height: 13px;
-      background: var(--ebg-yellow); border-radius: 2px;
-    }
-
-    /* ── CONTROLS ── */
-    .cg { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 14px; }
-    .cf { display: flex; flex-direction: column; gap: 5px; }
-    .cf label { font-size: 11.5px; font-weight: 500; color: var(--ebg-text-sec); }
+    .toolbar.open { display: block; }
+    .tb-row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+    .cf { display: flex; flex-direction: column; gap: 3px; }
+    .cf label { font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; }
     .cf input, .cf select {
-      font-family: inherit; font-size: 13.5px; padding: 9px 11px;
-      border-radius: 7px; border: 1.5px solid var(--ebg-border-light);
-      background: #FAFAFA; color: var(--ebg-text); outline: none;
-      transition: border-color .15s, box-shadow .15s;
+      font-family: inherit; font-size: 13px; padding: 7px 9px;
+      border-radius: 6px; border: 1.5px solid var(--border-l);
+      background: #FAFAFA; color: var(--text); outline: none;
+      transition: border-color .15s, box-shadow .15s; min-width: 0;
     }
-    .cf input:focus, .cf select:focus {
-      border-color: var(--ebg-yellow); box-shadow: 0 0 0 3px rgba(255,242,0,.15);
-    }
-    .cf input[type="file"] { padding: 7px; cursor: pointer; }
+    .cf input:focus, .cf select:focus { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(255,242,0,.15); }
+    .cf input[type="file"] { padding: 5px; cursor: pointer; max-width: 220px; }
     .cf input[type="file"]::file-selector-button {
-      font-family: inherit; font-size: 12px; font-weight: 600;
-      padding: 5px 12px; border: none; border-radius: 5px;
-      background: var(--ebg-black); color: #fff; cursor: pointer;
-      margin-right: 8px; transition: background .15s;
+      font-family: inherit; font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border: none; border-radius: 4px;
+      background: var(--black); color: #fff; cursor: pointer; margin-right: 6px;
     }
-    .cf input[type="file"]::file-selector-button:hover { background: #333; }
-    .csz { display: flex; align-items: center; gap: 6px; }
-    .csz input { width: 80px; }
-    .csz .x { color: var(--ebg-text-sec); font-size: 13px; font-weight: 600; }
-
-    /* ── BUTTONS ── */
-    .brow { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+    .csz { display: flex; align-items: center; gap: 4px; }
+    .csz input { width: 65px; }
+    .csz .x { color: var(--text2); font-size: 12px; font-weight: 700; }
     .btn {
-      font-family: inherit; font-size: 12.5px; font-weight: 600;
-      padding: 9px 16px; border-radius: 7px; border: none;
+      font-family: inherit; font-size: 11.5px; font-weight: 600;
+      padding: 7px 14px; border-radius: 6px; border: none;
       cursor: pointer; transition: all .15s;
-      display: inline-flex; align-items: center; gap: 5px;
+      display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
     }
     .btn:disabled { opacity: .3; cursor: not-allowed; }
-    .btn-y { background: var(--ebg-yellow); color: var(--ebg-black); }
-    .btn-y:not(:disabled):hover { background: #e6d900; box-shadow: 0 2px 8px rgba(255,242,0,.3); }
-    .btn-d { background: var(--ebg-black); color: #fff; }
-    .btn-d:not(:disabled):hover { background: #333; }
-    .btn-g { background: transparent; color: var(--ebg-text-sec); border: 1.5px solid var(--ebg-border); }
-    .btn-g:not(:disabled):hover { border-color: #bbb; background: #fafafa; }
+    .btn-y { background: var(--yellow); color: var(--black); }
+    .btn-y:not(:disabled):hover { background: #e6d900; }
+    .btn-g { background: transparent; color: var(--text2); border: 1.5px solid var(--border); }
+    .btn-g:not(:disabled):hover { border-color: #bbb; }
 
-    /* ── INSTRUCTIONS ── */
-    .instr {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 16px;
-      background: linear-gradient(135deg, rgba(255,242,0,.05), transparent);
-      border: 1px solid rgba(255,242,0,.15); border-radius: 8px;
-      font-size: 12px; color: var(--ebg-text-sec); line-height: 1.5;
+    .viewer-wrap {
+      flex: 1; overflow: auto; position: relative; background: #E0E0E0;
+      /* Allow native scroll/pinch zoom on the scrollable area */
     }
-    .steps { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-    .sbadge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 10px; background: var(--ebg-card);
-      border: 1px solid var(--ebg-border-light); border-radius: 16px;
-      font-size: 11px; font-weight: 500; white-space: nowrap;
-    }
-    .sbadge .n {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 16px; height: 16px; border-radius: 50%;
-      background: var(--ebg-yellow); color: var(--ebg-black);
-      font-size: 9px; font-weight: 700;
-    }
-    .sarr { color: var(--ebg-yellow); font-weight: 700; font-size: 14px; }
-
-    /* ── STATUS & KPIs ── */
-    #status { font-size: 12px; color: var(--ebg-text-sec); padding: 6px 0; line-height: 1.5; }
-    #status.ok { color: var(--ebg-success); }
-    #status.warn { color: var(--ebg-warn); }
-
-    .kpi { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .kpill {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 7px 14px; background: var(--ebg-black); color: #fff;
-      border-radius: 7px; font-size: 12.5px; font-weight: 500;
-    }
-    .kpill strong { color: var(--ebg-yellow); font-weight: 700; font-size: 14px; }
-    .kpill.fr {
-      background: rgba(255,242,0,.07); color: var(--ebg-text);
-      border: 1px solid rgba(255,242,0,.2);
-      font-family: 'DM Sans', ui-monospace, monospace; font-size: 11.5px;
+    .viewer-inner { position: relative; display: inline-block; min-width: 100%; min-height: 100%; }
+    .viewer-inner.centered { display: flex; align-items: center; justify-content: center; }
+    canvas { display: block; }
+    #overlay {
+      position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 10;
     }
 
-    /* ── VIEWER ── */
-    .vwr {
-      position: relative; border-radius: var(--radius); overflow: hidden;
-      background: #E5E5E5; box-shadow: var(--shadow);
-      touch-action: none; min-height: 180px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: crosshair;
+    /* ── CROSSHAIR POINTS ── */
+    .mpoint {
+      position: absolute; z-index: 20;
+      width: 22px; height: 22px;
+      /* touch-action: none ONLY on the point, not the viewer */
+      touch-action: none;
+      user-select: none; -webkit-user-select: none;
     }
-    .vwr.empty { min-height: 260px; cursor: default; }
-    .epholder { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--ebg-text-sec); }
-    .epholder svg { opacity: .25; }
-    .epholder p { font-size: 13px; opacity: .55; }
-    canvas { display: block; width: 100%; height: auto; }
-    #overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+    /* Default state: not grabbable, just visual */
+    .mpoint { pointer-events: none; }
+    /* In measure mode: grabbable */
+    body.measure-mode .mpoint { pointer-events: auto; cursor: grab; }
+    body.measure-mode .mpoint:active { cursor: grabbing; }
 
-    /* ── NOTICE ── */
-    .notice { font-size: 11.5px; color: var(--ebg-text-sec); line-height: 1.6; padding: 14px 18px; }
-    .notice strong { color: var(--ebg-text); font-weight: 600; }
+    .mpoint-crosshair { width: 100%; height: 100%; position: relative; }
+    .mpoint-disc {
+      position: absolute; inset: 3px; border-radius: 50%;
+      background: rgba(255, 242, 0, 0.2);
+      border: 1.5px solid rgba(255, 242, 0, 0.65);
+      box-shadow: 0 0 6px rgba(255, 242, 0, 0.2);
+      transition: transform .1s, background .1s, box-shadow .1s;
+    }
+    body.measure-mode .mpoint:hover .mpoint-disc {
+      background: rgba(255, 242, 0, 0.3);
+      box-shadow: 0 0 10px rgba(255, 242, 0, 0.35);
+    }
+    .mpoint.dragging .mpoint-disc {
+      background: rgba(255, 242, 0, 0.35);
+      box-shadow: 0 0 16px rgba(255, 242, 0, 0.45);
+    }
+    .mpoint-h, .mpoint-v { position: absolute; background: rgba(255, 242, 0, 0.8); }
+    .mpoint-h { width: 100%; height: 1px; top: 50%; left: 0; transform: translateY(-50%); }
+    .mpoint-v { height: 100%; width: 1px; left: 50%; top: 0; transform: translateX(-50%); }
+    .mpoint-hd, .mpoint-vd { position: absolute; background: rgba(0, 0, 0, 0.25); }
+    .mpoint-hd { width: 100%; height: 0.5px; top: calc(50% + 1px); left: 0; }
+    .mpoint-vd { height: 100%; width: 0.5px; left: calc(50% + 1px); top: 0; }
+    .mpoint-center {
+      position: absolute; width: 2px; height: 2px; border-radius: 50%;
+      background: var(--yellow); box-shadow: 0 0 2px rgba(0,0,0,.4);
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+    }
+    .mpoint-label {
+      position: absolute;
+      top: -14px; left: 50%; transform: translateX(-50%);
+      font-size: 9px; font-weight: 700; color: var(--black);
+      background: rgba(255, 242, 0, 0.85);
+      padding: 0px 4px; border-radius: 2px;
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.4; white-space: nowrap; pointer-events: none;
+    }
 
-    /* ── FOOTER ── */
+    .kpi-bar {
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      z-index: 50; display: none;
+      background: rgba(26,26,26,.92); backdrop-filter: blur(8px);
+      border-radius: 10px; padding: 8px 14px;
+      gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,.3); max-width: calc(100% - 20px);
+    }
+    .kpi-bar.show { display: flex; }
+    .kp { color: #fff; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .kp strong { color: var(--yellow); font-weight: 700; font-size: 14px; }
+    .kp-sep { width: 1px; height: 18px; background: rgba(255,255,255,.15); flex-shrink: 0; }
+    .status-float {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      z-index: 50; padding: 5px 14px;
+      background: rgba(26,26,26,.85); backdrop-filter: blur(6px);
+      border-radius: 8px; font-size: 11px; color: rgba(255,255,255,.7);
+      max-width: calc(100% - 20px); text-align: center;
+      pointer-events: none; transition: opacity .2s;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .status-float.ok { color: rgba(80,220,140,.9); }
+    .status-float.warn { color: rgba(255,200,60,.9); }
+    .status-float:empty { opacity: 0; }
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; gap: 12px; color: var(--text2); opacity: .5;
+    }
+    .empty-state svg { width: 52px; height: 52px; }
+    .empty-state p { font-size: 14px; }
     .ftr {
-      background: var(--ebg-black); padding: 12px 20px;
-      text-align: center; font-size: 11px; color: var(--ebg-footer-text);
-      letter-spacing: .02em; margin-top: auto;
+      background: var(--black); height: var(--ftr-h);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10.5px; color: var(--ftr); flex-shrink: 0;
     }
 
-    /* ── RESPONSIVE ── */
+    /* Mode indicator border glow */
+    body.measure-mode .viewer-wrap {
+      box-shadow: inset 0 0 0 2px rgba(255,242,0,.4);
+    }
+
     @media (max-width: 600px) {
-      .hdr { padding: 0 14px; height: 52px; }
-      .hdr h1 { font-size: 13px; }
-      .hdr-logo { height: 26px; }
-      .main { padding: 10px; gap: 10px; }
-      .card { padding: 14px; }
-      .cg { grid-template-columns: 1fr; gap: 10px; }
-      .instr { flex-direction: column; align-items: flex-start; }
+      .hdr { padding: 0 10px; gap: 6px; }
+      .hdr h1 { font-size: 12.5px; }
+      .hdr-logo { height: 24px; }
+      .toolbar { padding: 8px 10px; }
+      .tb-row { gap: 8px; }
+      .kpi-bar { padding: 6px 10px; bottom: 8px; }
+      .kp { font-size: 11px; } .kp strong { font-size: 12px; }
+      .tb-label { display: none; }
+      .mode-label { display: none; }
     }
   </style>
 </head>
 <body>
-
   <header class="hdr">
     <img class="hdr-logo" src="logo.png" alt="EBG" onerror="this.style.display='none'">
     <div class="hdr-sep"></div>
     <h1>PDF <b>Maßband</b></h1>
+    <div class="hdr-spacer"></div>
+
+    <!-- Mode toggle: switch between navigate (scroll/zoom) and measure (place/drag points) -->
+    <button class="mode-toggle" id="modeToggle" title="Modus wechseln: Navigieren ↔ Messen">
+      <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      <span class="mode-label" id="modeLabel">Messen</span>
+    </button>
+
+    <button class="hdr-toggle active" id="tbToggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/></svg>
+      <span class="tb-label">Einstellungen</span>
+    </button>
   </header>
 
-  <div class="main">
-
-    <!-- TOOLBAR -->
-    <div class="card">
-      <div class="card-lbl">Einstellungen</div>
-      <div class="cg">
-        <div class="cf">
-          <label>PDF auswählen</label>
-          <input id="file" type="file" accept="application/pdf" />
-        </div>
-        <div class="cf">
-          <label>Seite</label>
-          <select id="pageSelect" disabled></select>
-        </div>
-        <div class="cf">
-          <label>Zoom</label>
-          <select id="zoomSelect" disabled>
-            <option value="fit">Anpassen</option>
-            <option value="0.75">75 %</option>
-            <option value="1">100 %</option>
-            <option value="1.25">125 %</option>
-            <option value="1.5">150 %</option>
-            <option value="2">200 %</option>
-          </select>
-        </div>
-        <div class="cf">
-          <label>Maßstab (1 : n)</label>
-          <input id="scaleN" type="number" min="1" step="1" value="250" />
-        </div>
-        <div class="cf">
-          <label>Blattgröße</label>
-          <select id="paperPreset" title="Für 'Auto' wird die Seitengröße aus dem PDF genommen.">
-            <option value="auto">Auto (aus PDF)</option>
-            <option value="A4">A4 (210×297)</option>
-            <option value="A3">A3 (297×420)</option>
-            <option value="A2">A2 (420×594)</option>
-            <option value="custom">Custom</option>
-          </select>
-        </div>
-        <div class="cf">
-          <label>Custom (mm)</label>
-          <div class="csz">
-            <input id="customW" type="number" min="10" step="1" value="210" />
-            <span class="x">×</span>
-            <input id="customH" type="number" min="10" step="1" value="297" />
-          </div>
+  <div class="toolbar open" id="toolbar">
+    <div class="tb-row">
+      <div class="cf">
+        <label>PDF</label>
+        <input id="file" type="file" accept="application/pdf" />
+      </div>
+      <div class="cf">
+        <label>Seite</label>
+        <select id="pageSelect" disabled style="width:90px"></select>
+      </div>
+      <div class="cf">
+        <label>Zoom</label>
+        <select id="zoomSelect" disabled style="width:100px">
+          <option value="fit">Anpassen</option>
+          <option value="0.75">75 %</option>
+          <option value="1">100 %</option>
+          <option value="1.25">125 %</option>
+          <option value="1.5">150 %</option>
+          <option value="2">200 %</option>
+          <option value="3">300 %</option>
+          <option value="4">400 %</option>
+        </select>
+      </div>
+      <div class="cf">
+        <label>Maßstab 1:</label>
+        <input id="scaleN" type="number" min="1" step="1" value="250" style="width:80px" />
+      </div>
+      <div class="cf">
+        <label>Blattgröße</label>
+        <select id="paperPreset" style="width:130px">
+          <option value="auto">Auto (PDF)</option>
+          <option value="A4">A4</option>
+          <option value="A3">A3</option>
+          <option value="A2">A2</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+      <div class="cf">
+        <label>Custom mm</label>
+        <div class="csz">
+          <input id="customW" type="number" min="10" step="1" value="210" />
+          <span class="x">×</span>
+          <input id="customH" type="number" min="10" step="1" value="297" />
         </div>
       </div>
-
-      <div style="margin-top:14px" class="brow">
-        <button id="clear" class="btn btn-g" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14"/></svg>
-          Zurücksetzen
-        </button>
-        <button id="copy" class="btn btn-y" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-          Ergebnis kopieren
-        </button>
-      </div>
-
-      <!-- Instructions -->
-      <div class="instr" style="margin-top:14px">
-        <div class="steps">
-          <span class="sbadge"><span class="n">1</span> Punkt A tippen</span>
-          <span class="sarr">→</span>
-          <span class="sbadge"><span class="n">2</span> Punkt B tippen</span>
-          <span class="sarr">→</span>
-          <span class="sbadge"><span class="n">✓</span> Ergebnis</span>
+      <div class="cf" style="justify-content:end">
+        <div style="display:flex;gap:6px">
+          <button id="clear" class="btn btn-g" disabled>Zurücksetzen</button>
+          <button id="copy" class="btn btn-y" disabled>📋 Kopieren</button>
         </div>
       </div>
-
-      <div id="status" style="margin-top:8px"></div>
-      <div id="kpis" class="kpi" style="margin-top:8px"></div>
     </div>
+  </div>
 
-    <!-- VIEWER -->
-    <div id="viewer" class="vwr empty">
+  <div class="viewer-wrap" id="viewerWrap">
+    <div class="viewer-inner centered" id="viewerInner">
       <canvas id="pdfCanvas" style="display:none"></canvas>
-      <svg id="overlay"></svg>
-      <div class="epholder" id="emptyState">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
-        <p>PDF-Datei auswählen, um zu starten</p>
+    </div>
+    <svg id="overlay"></svg>
+
+    <div class="mpoint" id="ptA" style="display:none">
+      <div class="mpoint-crosshair">
+        <div class="mpoint-disc"></div>
+        <div class="mpoint-h"></div><div class="mpoint-hd"></div>
+        <div class="mpoint-v"></div><div class="mpoint-vd"></div>
+        <div class="mpoint-center"></div>
+        <div class="mpoint-label">A</div>
+      </div>
+    </div>
+    <div class="mpoint" id="ptB" style="display:none">
+      <div class="mpoint-crosshair">
+        <div class="mpoint-disc"></div>
+        <div class="mpoint-h"></div><div class="mpoint-hd"></div>
+        <div class="mpoint-v"></div><div class="mpoint-vd"></div>
+        <div class="mpoint-center"></div>
+        <div class="mpoint-label">B</div>
       </div>
     </div>
 
-    <!-- NOTICE -->
-    <div class="card notice">
-      <strong>Hinweis zur Genauigkeit</strong> —
-      Ohne Kalibrierung kann die App nur dann originalgetreu sein, wenn dein PDF die richtige Seiten-/Plotgröße repräsentiert (druckrichtig).
-      Bei Plänen ist das häufig ok, aber nicht garantiert (CropBox, eingebettete Rasterbilder, etc.).
+    <div class="status-float" id="status"></div>
+    <div class="kpi-bar" id="kpiBar"></div>
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+      <p>PDF auswählen, um zu messen</p>
     </div>
   </div>
 
@@ -302,238 +318,273 @@
 
   <script type="module">
     import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.mjs";
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.worker.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.worker.mjs";
 
-    const $ = (id) => document.getElementById(id);
-
-    const fileInput   = $("file");
-    const pageSelect  = $("pageSelect");
-    const zoomSelect  = $("zoomSelect");
-    const scaleNInput = $("scaleN");
-    const paperPreset = $("paperPreset");
-    const customW     = $("customW");
-    const customH     = $("customH");
-    const clearBtn    = $("clear");
-    const copyBtn     = $("copy");
-    const statusEl    = $("status");
-    const kpisEl      = $("kpis");
-    const viewer      = $("viewer");
-    const canvas      = $("pdfCanvas");
-    const ctx         = canvas.getContext("2d", { alpha: false });
-    const overlay     = $("overlay");
-    const emptyState  = $("emptyState");
+    const $ = id => document.getElementById(id);
+    const fileInput = $("file"), pageSelect = $("pageSelect"), zoomSelect = $("zoomSelect"),
+          scaleNInput = $("scaleN"), paperPreset = $("paperPreset"),
+          customW = $("customW"), customH = $("customH"),
+          clearBtn = $("clear"), copyBtn = $("copy"),
+          statusEl = $("status"), kpiBar = $("kpiBar"),
+          viewerWrap = $("viewerWrap"), viewerInner = $("viewerInner"),
+          canvas = $("pdfCanvas"), ctx = canvas.getContext("2d", { alpha: false }),
+          overlay = $("overlay"), emptyState = $("emptyState"),
+          ptAEl = $("ptA"), ptBEl = $("ptB"),
+          tbToggle = $("tbToggle"), toolbar = $("toolbar"),
+          modeToggle = $("modeToggle"), modeLabel = $("modeLabel"), modeIcon = $("modeIcon");
 
     let pdfDoc = null, page = null, pageNum = 1;
     let userZoom = "fit", renderScale = 1, viewport = null;
-    let A = null, B = null;
+    let ptA = null, ptB = null;
 
-    function setStatus(html, cls="") {
-      statusEl.className = cls || "";
+    // ── MODE: "navigate" (default, scroll/zoom free) or "measure" (place/drag points) ──
+    let mode = "navigate";
+
+    function setMode(m) {
+      mode = m;
+      if (mode === "measure") {
+        document.body.classList.add("measure-mode");
+        modeToggle.classList.add("active");
+        modeLabel.textContent = "Messen";
+        modeIcon.innerHTML = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>';
+        if (pdfDoc) setStatus("Messen-Modus: Tippe zum Setzen, ziehe zum Verschieben", "ok");
+      } else {
+        document.body.classList.remove("measure-mode");
+        modeToggle.classList.remove("active");
+        modeLabel.textContent = "Navigieren";
+        modeIcon.innerHTML = '<polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>';
+        if (pdfDoc) setStatus("Navigieren: Scrollen & Zoomen frei · Wechsle zu Messen ⊕", "ok");
+      }
+    }
+
+    modeToggle.addEventListener("click", () => {
+      setMode(mode === "navigate" ? "measure" : "navigate");
+    });
+
+    tbToggle.addEventListener("click", () => {
+      toolbar.classList.toggle("open");
+      tbToggle.classList.toggle("active");
+      if (pdfDoc) setTimeout(() => render().catch(console.error), 50);
+    });
+
+    function setStatus(html, cls = "") {
+      statusEl.className = "status-float " + cls;
       statusEl.innerHTML = html;
     }
 
     function resetMeasure() {
-      A = null; B = null;
+      ptA = null; ptB = null;
       overlay.innerHTML = "";
-      kpisEl.innerHTML = "";
-      copyBtn.disabled = true;
+      kpiBar.innerHTML = ""; kpiBar.classList.remove("show");
+      ptAEl.style.display = "none"; ptBEl.style.display = "none";
+      copyBtn.disabled = true; clearBtn.disabled = true;
     }
 
-    function mmPerPointFromPaper(pageWidthPt, pageHeightPt) {
-      const MM_PER_PT = 25.4 / 72;
-      const preset = paperPreset.value;
-      if (preset === "auto") return { mmPerPt: MM_PER_PT, note: "Auto (PDF points → mm via 1/72 inch)", warn: false };
-
-      let wmm, hmm;
-      if (preset === "A4") { wmm=210; hmm=297; }
-      if (preset === "A3") { wmm=297; hmm=420; }
-      if (preset === "A2") { wmm=420; hmm=594; }
-      if (preset === "custom") { wmm = Number(customW.value||0); hmm = Number(customH.value||0); }
-
-      if (!(wmm>0 && hmm>0)) return { mmPerPt: MM_PER_PT, note: "Ungültige Blattgröße → Auto", warn: true };
-
-      const mmPerPtW = wmm / pageWidthPt;
-      const mmPerPtH = hmm / pageHeightPt;
-      const mmPerPt = (mmPerPtW + mmPerPtH) / 2;
-      const aspectPage = pageWidthPt / pageHeightPt;
-      const aspectPaper = wmm / hmm;
-      const mismatch = Math.abs(aspectPage - aspectPaper) / aspectPaper;
-      return { mmPerPt, note: `${preset}: (${wmm}×${hmm} mm) / (${pageWidthPt.toFixed(1)}×${pageHeightPt.toFixed(1)} pt)`, warn: mismatch > 0.03 };
+    function mmPerPointFromPaper(wPt, hPt) {
+      const MM = 25.4 / 72, p = paperPreset.value;
+      if (p === "auto") return { mmPerPt: MM, note: "Auto · 1pt = " + MM.toFixed(4) + " mm", warn: false };
+      let w, h;
+      if (p === "A4") { w=210; h=297; } else if (p === "A3") { w=297; h=420; }
+      else if (p === "A2") { w=420; h=594; }
+      else { w = +customW.value || 0; h = +customH.value || 0; }
+      if (!(w > 0 && h > 0)) return { mmPerPt: MM, note: "Ungültig → Auto", warn: true };
+      const mmPt = ((w / wPt) + (h / hPt)) / 2;
+      const mis = Math.abs((wPt/hPt) - (w/h)) / (w/h);
+      return { mmPerPt: mmPt, note: `${p}: ${w}×${h} mm`, warn: mis > 0.03 };
     }
 
-    function pointsFromCanvasXY(xCss, yCss) {
-      const rect = canvas.getBoundingClientRect();
-      const xPx = xCss - rect.left;
-      const yPx = yCss - rect.top;
-      const xCanvas = xPx * (canvas.width / rect.width);
-      const yCanvas = yPx * (canvas.height / rect.height);
-      const dpr = window.devicePixelRatio || 1;
-      return { xPt: xCanvas / (renderScale * dpr), yPt: yCanvas / (renderScale * dpr) };
+    function cssToPt(clientX, clientY) {
+      const r = canvas.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+      const cx = (clientX - r.left) * (canvas.width / r.width);
+      const cy = (clientY - r.top) * (canvas.height / r.height);
+      return { xPt: cx / (renderScale * dpr), yPt: cy / (renderScale * dpr) };
     }
 
-    function drawOverlay(a, b) {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      const x1 = a.xPt * renderScale * dpr * (rect.width / canvas.width);
-      const y1 = a.yPt * renderScale * dpr * (rect.height / canvas.height);
-      const x2 = b.xPt * renderScale * dpr * (rect.width / canvas.width);
-      const y2 = b.yPt * renderScale * dpr * (rect.height / canvas.height);
+    function ptToCss(xPt, yPt) {
+      const r = canvas.getBoundingClientRect(), wr = viewerWrap.getBoundingClientRect();
+      const dpr = devicePixelRatio || 1;
+      return {
+        x: (xPt * renderScale * dpr * (r.width / canvas.width)) + (r.left - wr.left) + viewerWrap.scrollLeft,
+        y: (yPt * renderScale * dpr * (r.height / canvas.height)) + (r.top - wr.top) + viewerWrap.scrollTop,
+      };
+    }
 
-      overlay.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
+    const CH_HALF = 11;
+    function positionPoint(el, xPt, yPt) {
+      const { x, y } = ptToCss(xPt, yPt);
+      el.style.left = (x - CH_HALF) + "px";
+      el.style.top = (y - CH_HALF) + "px";
+    }
+
+    function drawLine() {
+      if (!ptA || !ptB) { overlay.innerHTML = ""; return; }
+      const a = ptToCss(ptA.xPt, ptA.yPt), b = ptToCss(ptB.xPt, ptB.yPt);
+      const sw = Math.max(viewerInner.scrollWidth, viewerWrap.clientWidth);
+      const sh = Math.max(viewerInner.scrollHeight, viewerWrap.clientHeight);
+      overlay.style.width = sw + "px"; overlay.style.height = sh + "px";
+      overlay.setAttribute("viewBox", `0 0 ${sw} ${sh}`);
       overlay.innerHTML = `
-        <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#FFF200" stroke-width="2.5" stroke-dasharray="6 3" />
-        <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="6 3" stroke-dashoffset="3" />
-        <circle cx="${x1}" cy="${y1}" r="7" fill="#FFF200" stroke="#1a1a1a" stroke-width="1.5" />
-        <circle cx="${x2}" cy="${y2}" r="7" fill="#FFF200" stroke="#1a1a1a" stroke-width="1.5" />
-        <text x="${x1+10}" y="${y1-8}" fill="#1a1a1a" font-size="11" font-weight="700" font-family="DM Sans,sans-serif">A</text>
-        <text x="${x2+10}" y="${y2-8}" fill="#1a1a1a" font-size="11" font-weight="700" font-family="DM Sans,sans-serif">B</text>
+        <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#FFF200" stroke-width="2" stroke-dasharray="6 3" opacity=".75"/>
+        <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgba(0,0,0,.3)" stroke-width="0.8" stroke-dasharray="6 3" stroke-dashoffset="3"/>
       `;
     }
 
-    function formatResult(paperMm, scaleN) {
-      const paperCm = paperMm / 10;
-      const realM = (paperMm / 1000) * scaleN;
-      return `Papier: ${paperMm.toFixed(1)} mm (${paperCm.toFixed(2)} cm) | Real (1:${scaleN}): ${realM.toFixed(3)} m | ${(paperMm * scaleN).toFixed(0)} mm`;
+    function updateKpis() {
+      if (!page || !ptA || !ptB) return;
+      const base = page.getViewport({ scale: 1 });
+      const paper = mmPerPointFromPaper(base.width, base.height);
+      const n = Math.max(1, +scaleNInput.value || 1);
+      const mm = Math.hypot(ptB.xPt - ptA.xPt, ptB.yPt - ptA.yPt) * paper.mmPerPt;
+      kpiBar.innerHTML = `
+        <span class="kp"><strong>${mm.toFixed(1)}</strong>&thinsp;mm</span>
+        <span class="kp-sep"></span>
+        <span class="kp"><strong>${(mm/10).toFixed(2)}</strong>&thinsp;cm</span>
+        <span class="kp-sep"></span>
+        <span class="kp"><strong>${((mm/1000)*n).toFixed(3)}</strong>&thinsp;m&ensp;(1:${n})</span>
+      `;
+      kpiBar.classList.add("show");
+      copyBtn.disabled = false;
+    }
+
+    function refreshOverlay() {
+      if (ptA) positionPoint(ptAEl, ptA.xPt, ptA.yPt);
+      if (ptB) positionPoint(ptBEl, ptB.xPt, ptB.yPt);
+      drawLine(); updateKpis();
     }
 
     async function render() {
       if (!pdfDoc) return;
       page = await pdfDoc.getPage(pageNum);
-      const baseVp = page.getViewport({ scale: 1 });
-      const rect = viewer.getBoundingClientRect();
-      const fitScale = rect.width / baseVp.width;
-      renderScale = (userZoom === "fit") ? fitScale : (fitScale * Number(userZoom));
+      const base = page.getViewport({ scale: 1 });
+      const wr = viewerWrap.getBoundingClientRect();
+      const fitScale = Math.min(wr.width / base.width, wr.height / base.height);
+      renderScale = userZoom === "fit" ? fitScale : (fitScale * +userZoom);
       viewport = page.getViewport({ scale: renderScale });
-
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = devicePixelRatio || 1;
       canvas.width = Math.floor(viewport.width * dpr);
       canvas.height = Math.floor(viewport.height * dpr);
       canvas.style.width = viewport.width + "px";
       canvas.style.height = viewport.height + "px";
+      viewerInner.classList.toggle("centered", viewport.width <= wr.width && viewport.height <= wr.height);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.imageSmoothingEnabled = true;
-
       await page.render({ canvasContext: ctx, viewport }).promise;
-
-      const paper = mmPerPointFromPaper(baseVp.width, baseVp.height);
-      const icon = paper.warn ? "⚠️" : "✓";
-      setStatus(`${icon} ${paper.note} · Seite: ${baseVp.width.toFixed(1)}×${baseVp.height.toFixed(1)} pt`, paper.warn ? "warn" : "ok");
-
-      resetMeasure();
-      clearBtn.disabled = false;
-      pageSelect.disabled = false;
-      zoomSelect.disabled = false;
+      const paper = mmPerPointFromPaper(base.width, base.height);
+      setStatus(`${paper.warn ? "⚠" : "✓"} ${paper.note} · ${base.width.toFixed(0)}×${base.height.toFixed(0)} pt`, paper.warn ? "warn" : "ok");
+      refreshOverlay();
     }
 
     async function loadPdf(file) {
-      resetMeasure();
-      setStatus("PDF wird geladen…");
-      const ab = await file.arrayBuffer();
-      pdfDoc = await pdfjsLib.getDocument({ data: ab }).promise;
-
+      resetMeasure(); setStatus("Laden…");
+      pdfDoc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
       pageSelect.innerHTML = "";
       for (let i = 1; i <= pdfDoc.numPages; i++) {
-        const opt = document.createElement("option");
-        opt.value = String(i);
-        opt.textContent = `Seite ${i}`;
-        pageSelect.appendChild(opt);
+        const o = document.createElement("option");
+        o.value = i; o.textContent = `${i} / ${pdfDoc.numPages}`;
+        pageSelect.appendChild(o);
       }
-      pageNum = 1; pageSelect.value = "1";
-      zoomSelect.value = "fit"; userZoom = "fit";
-
-      // Show canvas, hide empty state
-      canvas.style.display = "block";
-      emptyState.style.display = "none";
-      viewer.classList.remove("empty");
-
+      pageNum = 1; pageSelect.value = "1"; pageSelect.disabled = false;
+      zoomSelect.value = "fit"; userZoom = "fit"; zoomSelect.disabled = false;
+      canvas.style.display = "block"; emptyState.style.display = "none";
+      viewerInner.classList.remove("centered");
+      setMode("measure"); // start in measure mode after loading
       await render();
     }
 
-    function updateKpis(a, b) {
-      if (!page || !a || !b) return;
-      const baseVp = page.getViewport({ scale: 1 });
-      const paper = mmPerPointFromPaper(baseVp.width, baseVp.height);
-      const scaleN = Math.max(1, Number(scaleNInput.value || 1));
+    // ── DRAG POINTS (only in measure mode) ──
+    let dragging = null;
+    const grabOffset = { x: 0, y: 0 };
 
-      const distPt = Math.hypot(b.xPt - a.xPt, b.yPt - a.yPt);
-      const paperMm = distPt * paper.mmPerPt;
-      const res = formatResult(paperMm, scaleN);
-
-      kpisEl.innerHTML = `
-        <span class="kpill"><strong>${paperMm.toFixed(1)} mm</strong> Papier</span>
-        <span class="kpill"><strong>${(paperMm/10).toFixed(2)} cm</strong> Papier</span>
-        <span class="kpill"><strong>${((paperMm/1000)*scaleN).toFixed(3)} m</strong> Real (1:${scaleN})</span>
-        <span class="kpill fr">${res}</span>
-      `;
-      copyBtn.disabled = false;
+    function startDrag(which, ev) {
+      if (mode !== "measure") return;
+      ev.preventDefault(); ev.stopPropagation();
+      dragging = which;
+      const el = which === 'A' ? ptAEl : ptBEl;
+      const pt = which === 'A' ? ptA : ptB;
+      el.classList.add("dragging");
+      el.setPointerCapture(ev.pointerId);
+      // Offset: keep crosshair center offset from pointer so finger doesn't cover it
+      const pointerPt = cssToPt(ev.clientX, ev.clientY);
+      grabOffset.x = pt.xPt - pointerPt.xPt;
+      grabOffset.y = pt.yPt - pointerPt.yPt;
     }
 
-    // Events
-    fileInput.addEventListener("change", (e) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      loadPdf(f).catch(err => {
-        console.error(err);
-        setStatus("Fehler beim Laden. HTTPS (z.B. GitHub Pages) verwenden.", "warn");
-      });
+    document.addEventListener("pointermove", ev => {
+      if (!dragging || !page) return;
+      const pointerPt = cssToPt(ev.clientX, ev.clientY);
+      const newPt = { xPt: pointerPt.xPt + grabOffset.x, yPt: pointerPt.yPt + grabOffset.y };
+      if (dragging === 'A') { ptA = newPt; positionPoint(ptAEl, newPt.xPt, newPt.yPt); }
+      else { ptB = newPt; positionPoint(ptBEl, newPt.xPt, newPt.yPt); }
+      drawLine(); updateKpis();
     });
 
-    pageSelect.addEventListener("change", async () => { pageNum = Number(pageSelect.value); await render(); });
+    document.addEventListener("pointerup", () => {
+      if (!dragging) return;
+      (dragging === 'A' ? ptAEl : ptBEl).classList.remove("dragging");
+      dragging = null;
+    });
+
+    ptAEl.addEventListener("pointerdown", ev => startDrag('A', ev));
+    ptBEl.addEventListener("pointerdown", ev => startDrag('B', ev));
+
+    // ── CLICK TO PLACE (only in measure mode) ──
+    viewerWrap.addEventListener("pointerdown", ev => {
+      if (mode !== "measure") return; // navigate mode: let browser handle scroll/zoom
+      if (!pdfDoc || !page || ev.target.closest(".mpoint")) return;
+
+      const pt = cssToPt(ev.clientX, ev.clientY);
+      if (!ptA) {
+        ptA = pt; ptAEl.style.display = "block"; positionPoint(ptAEl, pt.xPt, pt.yPt);
+        clearBtn.disabled = false;
+        setStatus("Punkt A ✓ – tippe Punkt B", "ok"); return;
+      }
+      if (!ptB) {
+        ptB = pt; ptBEl.style.display = "block"; positionPoint(ptBEl, pt.xPt, pt.yPt);
+        drawLine(); updateKpis();
+        setStatus("Punkte verschiebbar · Wechsle zu Navigieren zum Zoomen", "ok"); return;
+      }
+      // Both placed: move the closer one
+      const dA = Math.hypot(pt.xPt - ptA.xPt, pt.yPt - ptA.yPt);
+      const dB = Math.hypot(pt.xPt - ptB.xPt, pt.yPt - ptB.yPt);
+      if (dA <= dB) { ptA = pt; positionPoint(ptAEl, pt.xPt, pt.yPt); }
+      else { ptB = pt; positionPoint(ptBEl, pt.xPt, pt.yPt); }
+      drawLine(); updateKpis();
+    });
+
+    // ── Standard events ──
+    fileInput.addEventListener("change", e => {
+      const f = e.target.files?.[0];
+      if (f) loadPdf(f).catch(err => { console.error(err); setStatus("Fehler – HTTPS nutzen", "warn"); });
+    });
+    pageSelect.addEventListener("change", async () => { pageNum = +pageSelect.value; resetMeasure(); await render(); });
     zoomSelect.addEventListener("change", async () => { userZoom = zoomSelect.value; await render(); });
+    paperPreset.addEventListener("change", () => { if (pdfDoc) render().catch(console.error); });
+    customW.addEventListener("input", () => { if (paperPreset.value === "custom" && pdfDoc) render().catch(console.error); });
+    customH.addEventListener("input", () => { if (paperPreset.value === "custom" && pdfDoc) render().catch(console.error); });
+    scaleNInput.addEventListener("input", () => updateKpis());
 
-    paperPreset.addEventListener("change", () => { if (pdfDoc) { resetMeasure(); render().catch(console.error); } });
-    customW.addEventListener("input", () => { if (paperPreset.value==="custom" && pdfDoc) { resetMeasure(); render().catch(console.error); } });
-    customH.addEventListener("input", () => { if (paperPreset.value==="custom" && pdfDoc) { resetMeasure(); render().catch(console.error); } });
-    scaleNInput.addEventListener("input", () => { if (A && B) updateKpis(A, B); });
-
-    clearBtn.addEventListener("click", () => resetMeasure());
+    clearBtn.addEventListener("click", () => {
+      resetMeasure();
+      if (pdfDoc) setStatus("Zurückgesetzt – tippe zwei neue Punkte", "ok");
+    });
 
     copyBtn.addEventListener("click", async () => {
-      if (!(A && B && page)) return;
-      const baseVp = page.getViewport({ scale: 1 });
-      const paper = mmPerPointFromPaper(baseVp.width, baseVp.height);
-      const scaleN = Math.max(1, Number(scaleNInput.value || 1));
-      const distPt = Math.hypot(B.xPt - A.xPt, B.yPt - A.yPt);
-      const paperMm = distPt * paper.mmPerPt;
-
-      const text = [
-        "PDF Maßband Ergebnis",
-        `Seite: ${pageNum}`,
-        `Maßstab: 1:${scaleN}`,
-        `Papier: ${paperMm.toFixed(1)} mm (${(paperMm/10).toFixed(2)} cm)`,
-        `Real: ${((paperMm/1000)*scaleN).toFixed(3)} m`,
-      ].join("\n");
-
-      try { await navigator.clipboard.writeText(text); setStatus("✓ In Zwischenablage kopiert.", "ok"); }
+      if (!(ptA && ptB && page)) return;
+      const base = page.getViewport({ scale: 1 });
+      const paper = mmPerPointFromPaper(base.width, base.height);
+      const n = Math.max(1, +scaleNInput.value || 1);
+      const mm = Math.hypot(ptB.xPt - ptA.xPt, ptB.yPt - ptA.yPt) * paper.mmPerPt;
+      const text = `PDF Maßband\nSeite: ${pageNum}\nMaßstab: 1:${n}\nPapier: ${mm.toFixed(1)} mm (${(mm/10).toFixed(2)} cm)\nReal: ${((mm/1000)*n).toFixed(3)} m`;
+      try { await navigator.clipboard.writeText(text); setStatus("✓ Kopiert!", "ok"); }
       catch { prompt("Kopieren:", text); }
     });
 
-    // Tap to measure
-    viewer.addEventListener("pointerdown", (ev) => {
-      if (!pdfDoc || !page) return;
-      const p = pointsFromCanvasXY(ev.clientX, ev.clientY);
+    let rt;
+    window.addEventListener("resize", () => { if (pdfDoc) { clearTimeout(rt); rt = setTimeout(() => render().catch(console.error), 120); } });
+    viewerWrap.addEventListener("scroll", () => { if (ptA || ptB) refreshOverlay(); });
 
-      if (!A) {
-        A = p;
-        setStatus("Punkt A gesetzt – tippe jetzt Punkt B.", "ok");
-        overlay.innerHTML = "";
-        kpisEl.innerHTML = "";
-        copyBtn.disabled = true;
-        return;
-      }
-      B = p;
-      drawOverlay(A, B);
-      updateKpis(A, B);
-      setStatus("✓ Messung abgeschlossen. Zurücksetzen für neue Messung.", "ok");
-    });
-
-    let resizeTimer = null;
-    window.addEventListener("resize", () => {
-      if (!pdfDoc) return;
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => render().catch(console.error), 150);
-    });
+    // Start in navigate mode
+    setMode("navigate");
   </script>
 </body>
 </html>
