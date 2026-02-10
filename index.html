@@ -2,7 +2,10 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>PDF Maßband – EBG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,500;9..40,700&display=swap" rel="stylesheet">
@@ -11,87 +14,115 @@
       --yellow: #FFF200; --black: #1a1a1a; --bg: #F5F5F5;
       --card: #FFFFFF; --text: #323130; --text2: #646464;
       --border: #E8E6E4; --border-l: #F3F2F1; --ftr: #969696;
-      --hdr-h: 52px; --ftr-h: 36px;
+      /* iOS safe areas */
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; }
+    html {
+      height: 100%;
+      /* Prevent iOS rubber-band on the whole page */
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
     body {
       font-family: 'DM Sans', -apple-system, system-ui, sans-serif;
-      background: var(--bg); color: var(--text);
-      display: flex; flex-direction: column; height: 100vh;
+      background: var(--black); color: var(--text);
+      /* Use dvh for real viewport height on iOS */
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      /* Prevent text size adjust on rotation */
+      -webkit-text-size-adjust: 100%;
     }
+
+    /* ── HEADER ── */
     .hdr {
-      background: var(--black); height: var(--hdr-h);
-      display: flex; align-items: center; padding: 0 16px; gap: 12px;
+      background: var(--black);
+      /* Pad top for notch/dynamic island */
+      padding: var(--sat) 16px 0 16px;
       flex-shrink: 0; z-index: 100;
     }
-    .hdr-logo { height: 28px; width: auto; }
-    .hdr-sep { width: 2px; height: 22px; background: var(--yellow); border-radius: 1px; flex-shrink: 0; }
-    .hdr h1 { color: #fff; font-size: 14px; font-weight: 500; white-space: nowrap; }
+    .hdr-inner {
+      height: 48px;
+      display: flex; align-items: center; gap: 10px;
+      padding-left: var(--sal); padding-right: var(--sar);
+    }
+    .hdr-logo { height: 26px; width: auto; }
+    .hdr-sep { width: 2px; height: 20px; background: var(--yellow); border-radius: 1px; flex-shrink: 0; }
+    .hdr h1 { color: #fff; font-size: 13.5px; font-weight: 500; white-space: nowrap; }
     .hdr h1 b { color: var(--yellow); font-weight: 700; }
     .hdr-spacer { flex: 1; }
-    .hdr-toggle {
+    .hdr-btn {
       background: none; border: 1.5px solid rgba(255,255,255,.2); border-radius: 6px;
-      color: #fff; padding: 5px 10px; font-family: inherit; font-size: 11px; font-weight: 600;
-      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; white-space: nowrap;
+      color: #fff; padding: 5px 8px; font-family: inherit; font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 4px;
+      white-space: nowrap; -webkit-tap-highlight-color: transparent;
     }
-    .hdr-toggle:hover { border-color: var(--yellow); color: var(--yellow); }
-    .hdr-toggle.active { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
-    .hdr-toggle svg { width: 14px; height: 14px; }
+    .hdr-btn:active { opacity: .7; }
+    .hdr-btn.active { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
+    .hdr-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
-    /* Mode toggle */
-    .mode-toggle {
-      background: none; border: 1.5px solid rgba(255,255,255,.2); border-radius: 6px;
-      color: #fff; padding: 5px 10px; font-family: inherit; font-size: 11px; font-weight: 600;
-      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; white-space: nowrap;
-    }
-    .mode-toggle:hover { border-color: var(--yellow); color: var(--yellow); }
-    .mode-toggle.active { background: var(--yellow); color: var(--black); border-color: var(--yellow); }
-    .mode-toggle svg { width: 14px; height: 14px; }
-
+    /* ── TOOLBAR ── */
     .toolbar {
       background: var(--card); border-bottom: 1px solid var(--border-l);
-      padding: 10px 16px; flex-shrink: 0; z-index: 90;
+      padding: 8px 16px; padding-left: calc(16px + var(--sal)); padding-right: calc(16px + var(--sar));
+      flex-shrink: 0; z-index: 90;
       display: none; overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
     }
     .toolbar.open { display: block; }
-    .tb-row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
-    .cf { display: flex; flex-direction: column; gap: 3px; }
-    .cf label { font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; }
+    .tb-row { display: flex; gap: 8px; align-items: end; flex-wrap: nowrap; min-width: max-content; }
+    .cf { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .cf label { font-size: 9px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; }
     .cf input, .cf select {
-      font-family: inherit; font-size: 13px; padding: 7px 9px;
-      border-radius: 6px; border: 1.5px solid var(--border-l);
+      font-family: inherit; font-size: 16px; /* 16px prevents iOS zoom on focus */
+      padding: 6px 8px; border-radius: 6px; border: 1.5px solid var(--border-l);
       background: #FAFAFA; color: var(--text); outline: none;
-      transition: border-color .15s, box-shadow .15s; min-width: 0;
+      transition: border-color .15s; min-width: 0;
+      -webkit-appearance: none;
     }
-    .cf input:focus, .cf select:focus { border-color: var(--yellow); box-shadow: 0 0 0 2px rgba(255,242,0,.15); }
-    .cf input[type="file"] { padding: 5px; cursor: pointer; max-width: 220px; }
+    .cf input:focus, .cf select:focus { border-color: var(--yellow); }
+    .cf input[type="file"] { padding: 4px; cursor: pointer; max-width: 200px; font-size: 14px; }
     .cf input[type="file"]::file-selector-button {
       font-family: inherit; font-size: 11px; font-weight: 600;
-      padding: 4px 10px; border: none; border-radius: 4px;
-      background: var(--black); color: #fff; cursor: pointer; margin-right: 6px;
+      padding: 4px 8px; border: none; border-radius: 4px;
+      background: var(--black); color: #fff; cursor: pointer; margin-right: 4px;
     }
-    .csz { display: flex; align-items: center; gap: 4px; }
-    .csz input { width: 65px; }
+    .csz { display: flex; align-items: center; gap: 3px; }
+    .csz input { width: 60px; }
     .csz .x { color: var(--text2); font-size: 12px; font-weight: 700; }
     .btn {
-      font-family: inherit; font-size: 11.5px; font-weight: 600;
-      padding: 7px 14px; border-radius: 6px; border: none;
+      font-family: inherit; font-size: 11px; font-weight: 600;
+      padding: 7px 12px; border-radius: 6px; border: none;
       cursor: pointer; transition: all .15s;
-      display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
     }
     .btn:disabled { opacity: .3; cursor: not-allowed; }
     .btn-y { background: var(--yellow); color: var(--black); }
-    .btn-y:not(:disabled):hover { background: #e6d900; }
     .btn-g { background: transparent; color: var(--text2); border: 1.5px solid var(--border); }
-    .btn-g:not(:disabled):hover { border-color: #bbb; }
 
+    /* ── VIEWER ── */
     .viewer-wrap {
-      flex: 1; overflow: auto; position: relative; background: #E0E0E0;
-      /* Allow native scroll/pinch zoom on the scrollable area */
+      flex: 1; position: relative; background: #E0E0E0;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      /* This is key: allow native scroll+zoom inside this container */
     }
-    .viewer-inner { position: relative; display: inline-block; min-width: 100%; min-height: 100%; }
-    .viewer-inner.centered { display: flex; align-items: center; justify-content: center; }
+    .viewer-inner {
+      position: relative;
+      display: inline-block;
+      min-width: 100%; min-height: 100%;
+      transform-origin: 0 0;
+    }
+    .viewer-inner.centered {
+      display: flex; align-items: center; justify-content: center;
+    }
     canvas { display: block; }
     #overlay {
       position: absolute; left: 0; top: 0; width: 100%; height: 100%;
@@ -102,27 +133,20 @@
     .mpoint {
       position: absolute; z-index: 20;
       width: 22px; height: 22px;
-      /* touch-action: none ONLY on the point, not the viewer */
       touch-action: none;
       user-select: none; -webkit-user-select: none;
+      pointer-events: none; /* default: can't interact */
+      -webkit-tap-highlight-color: transparent;
     }
-    /* Default state: not grabbable, just visual */
-    .mpoint { pointer-events: none; }
-    /* In measure mode: grabbable */
     body.measure-mode .mpoint { pointer-events: auto; cursor: grab; }
     body.measure-mode .mpoint:active { cursor: grabbing; }
-
     .mpoint-crosshair { width: 100%; height: 100%; position: relative; }
     .mpoint-disc {
       position: absolute; inset: 3px; border-radius: 50%;
       background: rgba(255, 242, 0, 0.2);
       border: 1.5px solid rgba(255, 242, 0, 0.65);
       box-shadow: 0 0 6px rgba(255, 242, 0, 0.2);
-      transition: transform .1s, background .1s, box-shadow .1s;
-    }
-    body.measure-mode .mpoint:hover .mpoint-disc {
-      background: rgba(255, 242, 0, 0.3);
-      box-shadow: 0 0 10px rgba(255, 242, 0, 0.35);
+      transition: background .1s, box-shadow .1s;
     }
     .mpoint.dragging .mpoint-disc {
       background: rgba(255, 242, 0, 0.35);
@@ -140,8 +164,7 @@
       top: 50%; left: 50%; transform: translate(-50%, -50%);
     }
     .mpoint-label {
-      position: absolute;
-      top: -14px; left: 50%; transform: translateX(-50%);
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
       font-size: 9px; font-weight: 700; color: var(--black);
       background: rgba(255, 242, 0, 0.85);
       padding: 0px 4px; border-radius: 2px;
@@ -149,22 +172,27 @@
       line-height: 1.4; white-space: nowrap; pointer-events: none;
     }
 
+    /* ── KPI BAR ── */
     .kpi-bar {
-      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      position: absolute;
+      bottom: calc(8px + var(--sab));
+      left: 50%; transform: translateX(-50%);
       z-index: 50; display: none;
-      background: rgba(26,26,26,.92); backdrop-filter: blur(8px);
-      border-radius: 10px; padding: 8px 14px;
-      gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center;
+      background: rgba(26,26,26,.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      border-radius: 10px; padding: 7px 12px;
+      gap: 6px; align-items: center; flex-wrap: wrap; justify-content: center;
       box-shadow: 0 4px 20px rgba(0,0,0,.3); max-width: calc(100% - 20px);
     }
     .kpi-bar.show { display: flex; }
-    .kp { color: #fff; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-    .kp strong { color: var(--yellow); font-weight: 700; font-size: 14px; }
-    .kp-sep { width: 1px; height: 18px; background: rgba(255,255,255,.15); flex-shrink: 0; }
+    .kp { color: #fff; font-size: 11.5px; font-weight: 500; display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+    .kp strong { color: var(--yellow); font-weight: 700; font-size: 13px; }
+    .kp-sep { width: 1px; height: 16px; background: rgba(255,255,255,.15); flex-shrink: 0; }
+
+    /* ── STATUS ── */
     .status-float {
-      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-      z-index: 50; padding: 5px 14px;
-      background: rgba(26,26,26,.85); backdrop-filter: blur(6px);
+      position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+      z-index: 50; padding: 4px 12px;
+      background: rgba(26,26,26,.85); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
       border-radius: 8px; font-size: 11px; color: rgba(255,255,255,.7);
       max-width: calc(100% - 20px); text-align: center;
       pointer-events: none; transition: opacity .2s;
@@ -173,55 +201,73 @@
     .status-float.ok { color: rgba(80,220,140,.9); }
     .status-float.warn { color: rgba(255,200,60,.9); }
     .status-float:empty { opacity: 0; }
+
     .empty-state {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       height: 100%; gap: 12px; color: var(--text2); opacity: .5;
     }
-    .empty-state svg { width: 52px; height: 52px; }
-    .empty-state p { font-size: 14px; }
+    .empty-state svg { width: 48px; height: 48px; }
+    .empty-state p { font-size: 13px; }
+
+    /* ── FOOTER ── */
     .ftr {
-      background: var(--black); height: var(--ftr-h);
+      background: var(--black);
+      padding: 0 16px var(--sab) 16px;
+      flex-shrink: 0;
+    }
+    .ftr-inner {
+      height: 32px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 10.5px; color: var(--ftr); flex-shrink: 0;
+      font-size: 10px; color: var(--ftr);
+      padding-left: var(--sal); padding-right: var(--sar);
     }
 
-    /* Mode indicator border glow */
+    /* Mode indicator */
     body.measure-mode .viewer-wrap {
-      box-shadow: inset 0 0 0 2px rgba(255,242,0,.4);
+      box-shadow: inset 0 0 0 2px rgba(255,242,0,.35);
     }
 
+    /* ── RESPONSIVE ── */
     @media (max-width: 600px) {
-      .hdr { padding: 0 10px; gap: 6px; }
-      .hdr h1 { font-size: 12.5px; }
-      .hdr-logo { height: 24px; }
-      .toolbar { padding: 8px 10px; }
-      .tb-row { gap: 8px; }
-      .kpi-bar { padding: 6px 10px; bottom: 8px; }
-      .kp { font-size: 11px; } .kp strong { font-size: 12px; }
-      .tb-label { display: none; }
-      .mode-label { display: none; }
+      .hdr-inner { gap: 6px; }
+      .hdr h1 { font-size: 12px; }
+      .hdr-logo { height: 22px; }
+      .hdr-btn { padding: 5px 6px; font-size: 10px; }
+      .toolbar { padding: 6px 10px; }
+      .tb-row { gap: 6px; }
+      .kpi-bar { padding: 5px 8px; }
+      .kp { font-size: 10.5px; } .kp strong { font-size: 12px; }
+      .btn-lbl { display: none; }
     }
   </style>
 </head>
 <body>
   <header class="hdr">
-    <img class="hdr-logo" src="logo.png" alt="EBG" onerror="this.style.display='none'">
-    <div class="hdr-sep"></div>
-    <h1>PDF <b>Maßband</b></h1>
-    <div class="hdr-spacer"></div>
+    <div class="hdr-inner">
+      <img class="hdr-logo" src="logo.png" alt="EBG" onerror="this.style.display='none'">
+      <div class="hdr-sep"></div>
+      <h1>PDF <b>Maßband</b></h1>
+      <div class="hdr-spacer"></div>
 
-    <!-- Mode toggle: switch between navigate (scroll/zoom) and measure (place/drag points) -->
-    <button class="mode-toggle" id="modeToggle" title="Modus wechseln: Navigieren ↔ Messen">
-      <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-      </svg>
-      <span class="mode-label" id="modeLabel">Messen</span>
-    </button>
+      <button class="hdr-btn" id="modeToggle">
+        <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        <span class="btn-lbl" id="modeLabel">Messen</span>
+      </button>
 
-    <button class="hdr-toggle active" id="tbToggle">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/></svg>
-      <span class="tb-label">Einstellungen</span>
-    </button>
+      <button class="hdr-btn" id="zoomIn" title="+">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <button class="hdr-btn" id="zoomOut" title="−">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+
+      <button class="hdr-btn active" id="tbToggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/></svg>
+        <span class="btn-lbl">⚙</span>
+      </button>
+    </div>
   </header>
 
   <div class="toolbar open" id="toolbar">
@@ -232,28 +278,15 @@
       </div>
       <div class="cf">
         <label>Seite</label>
-        <select id="pageSelect" disabled style="width:90px"></select>
-      </div>
-      <div class="cf">
-        <label>Zoom</label>
-        <select id="zoomSelect" disabled style="width:100px">
-          <option value="fit">Anpassen</option>
-          <option value="0.75">75 %</option>
-          <option value="1">100 %</option>
-          <option value="1.25">125 %</option>
-          <option value="1.5">150 %</option>
-          <option value="2">200 %</option>
-          <option value="3">300 %</option>
-          <option value="4">400 %</option>
-        </select>
+        <select id="pageSelect" disabled style="width:80px"></select>
       </div>
       <div class="cf">
         <label>Maßstab 1:</label>
-        <input id="scaleN" type="number" min="1" step="1" value="250" style="width:80px" />
+        <input id="scaleN" type="number" min="1" step="1" value="250" style="width:75px" />
       </div>
       <div class="cf">
         <label>Blattgröße</label>
-        <select id="paperPreset" style="width:130px">
+        <select id="paperPreset" style="width:115px">
           <option value="auto">Auto (PDF)</option>
           <option value="A4">A4</option>
           <option value="A3">A3</option>
@@ -270,9 +303,9 @@
         </div>
       </div>
       <div class="cf" style="justify-content:end">
-        <div style="display:flex;gap:6px">
-          <button id="clear" class="btn btn-g" disabled>Zurücksetzen</button>
-          <button id="copy" class="btn btn-y" disabled>📋 Kopieren</button>
+        <div style="display:flex;gap:5px">
+          <button id="clear" class="btn btn-g" disabled>✕</button>
+          <button id="copy" class="btn btn-y" disabled>📋</button>
         </div>
       </div>
     </div>
@@ -310,18 +343,18 @@
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
         <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
       </svg>
-      <p>PDF auswählen, um zu messen</p>
+      <p>PDF auswählen</p>
     </div>
   </div>
 
-  <footer class="ftr">© 2026 David Schmidt</footer>
+  <footer class="ftr"><div class="ftr-inner">© 2026 David Schmidt</div></footer>
 
   <script type="module">
     import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.mjs";
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.worker.mjs";
 
     const $ = id => document.getElementById(id);
-    const fileInput = $("file"), pageSelect = $("pageSelect"), zoomSelect = $("zoomSelect"),
+    const fileInput = $("file"), pageSelect = $("pageSelect"),
           scaleNInput = $("scaleN"), paperPreset = $("paperPreset"),
           customW = $("customW"), customH = $("customH"),
           clearBtn = $("clear"), copyBtn = $("copy"),
@@ -331,15 +364,42 @@
           overlay = $("overlay"), emptyState = $("emptyState"),
           ptAEl = $("ptA"), ptBEl = $("ptB"),
           tbToggle = $("tbToggle"), toolbar = $("toolbar"),
-          modeToggle = $("modeToggle"), modeLabel = $("modeLabel"), modeIcon = $("modeIcon");
+          modeToggle = $("modeToggle"), modeLabel = $("modeLabel"), modeIcon = $("modeIcon"),
+          zoomInBtn = $("zoomIn"), zoomOutBtn = $("zoomOut");
 
     let pdfDoc = null, page = null, pageNum = 1;
-    let userZoom = "fit", renderScale = 1, viewport = null;
+    // renderScale: how many CSS px per PDF point. Zoom changes this and re-renders the canvas.
+    // This means zoom = bigger canvas = scrollable, but measurement stays in PDF points.
+    let renderScale = 1;
+    let baseScale = 1; // fit-to-viewport scale
+    let zoomLevel = 1; // user zoom multiplier (1 = fit)
+    let viewport = null;
     let ptA = null, ptB = null;
-
-    // ── MODE: "navigate" (default, scroll/zoom free) or "measure" (place/drag points) ──
     let mode = "navigate";
 
+    // Zoom steps
+    const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6];
+
+    function nearestZoomIdx(z) {
+      let best = 0;
+      for (let i = 1; i < ZOOM_STEPS.length; i++) {
+        if (Math.abs(ZOOM_STEPS[i] - z) < Math.abs(ZOOM_STEPS[best] - z)) best = i;
+      }
+      return best;
+    }
+
+    function doZoom(dir) {
+      if (!pdfDoc) return;
+      const idx = nearestZoomIdx(zoomLevel);
+      const next = dir > 0 ? Math.min(idx + 1, ZOOM_STEPS.length - 1) : Math.max(idx - 1, 0);
+      zoomLevel = ZOOM_STEPS[next];
+      render().catch(console.error);
+    }
+
+    zoomInBtn.addEventListener("click", () => doZoom(1));
+    zoomOutBtn.addEventListener("click", () => doZoom(-1));
+
+    // ── MODE ──
     function setMode(m) {
       mode = m;
       if (mode === "measure") {
@@ -347,19 +407,17 @@
         modeToggle.classList.add("active");
         modeLabel.textContent = "Messen";
         modeIcon.innerHTML = '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>';
-        if (pdfDoc) setStatus("Messen-Modus: Tippe zum Setzen, ziehe zum Verschieben", "ok");
+        if (pdfDoc) setStatus("Messen: Tippe zum Setzen, ziehe Punkte", "ok");
       } else {
         document.body.classList.remove("measure-mode");
         modeToggle.classList.remove("active");
         modeLabel.textContent = "Navigieren";
         modeIcon.innerHTML = '<polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/>';
-        if (pdfDoc) setStatus("Navigieren: Scrollen & Zoomen frei · Wechsle zu Messen ⊕", "ok");
+        if (pdfDoc) setStatus("Navigieren: Scrollen frei · +/− zum Zoomen", "ok");
       }
     }
 
-    modeToggle.addEventListener("click", () => {
-      setMode(mode === "navigate" ? "measure" : "navigate");
-    });
+    modeToggle.addEventListener("click", () => setMode(mode === "navigate" ? "measure" : "navigate"));
 
     tbToggle.addEventListener("click", () => {
       toolbar.classList.toggle("open");
@@ -382,15 +440,15 @@
 
     function mmPerPointFromPaper(wPt, hPt) {
       const MM = 25.4 / 72, p = paperPreset.value;
-      if (p === "auto") return { mmPerPt: MM, note: "Auto · 1pt = " + MM.toFixed(4) + " mm", warn: false };
+      if (p === "auto") return { mmPerPt: MM, note: "Auto", warn: false };
       let w, h;
       if (p === "A4") { w=210; h=297; } else if (p === "A3") { w=297; h=420; }
       else if (p === "A2") { w=420; h=594; }
       else { w = +customW.value || 0; h = +customH.value || 0; }
-      if (!(w > 0 && h > 0)) return { mmPerPt: MM, note: "Ungültig → Auto", warn: true };
+      if (!(w > 0 && h > 0)) return { mmPerPt: MM, note: "→ Auto", warn: true };
       const mmPt = ((w / wPt) + (h / hPt)) / 2;
       const mis = Math.abs((wPt/hPt) - (w/h)) / (w/h);
-      return { mmPerPt: mmPt, note: `${p}: ${w}×${h} mm`, warn: mis > 0.03 };
+      return { mmPerPt: mmPt, note: `${p}: ${w}×${h}`, warn: mis > 0.03 };
     }
 
     function cssToPt(clientX, clientY) {
@@ -409,11 +467,10 @@
       };
     }
 
-    const CH_HALF = 11;
+    const CH = 11;
     function positionPoint(el, xPt, yPt) {
       const { x, y } = ptToCss(xPt, yPt);
-      el.style.left = (x - CH_HALF) + "px";
-      el.style.top = (y - CH_HALF) + "px";
+      el.style.left = (x - CH) + "px"; el.style.top = (y - CH) + "px";
     }
 
     function drawLine() {
@@ -457,43 +514,54 @@
       page = await pdfDoc.getPage(pageNum);
       const base = page.getViewport({ scale: 1 });
       const wr = viewerWrap.getBoundingClientRect();
-      const fitScale = Math.min(wr.width / base.width, wr.height / base.height);
-      renderScale = userZoom === "fit" ? fitScale : (fitScale * +userZoom);
+
+      // Base scale to fit viewport
+      baseScale = Math.min(wr.width / base.width, wr.height / base.height);
+      renderScale = baseScale * zoomLevel;
       viewport = page.getViewport({ scale: renderScale });
+
       const dpr = devicePixelRatio || 1;
       canvas.width = Math.floor(viewport.width * dpr);
       canvas.height = Math.floor(viewport.height * dpr);
       canvas.style.width = viewport.width + "px";
       canvas.style.height = viewport.height + "px";
-      viewerInner.classList.toggle("centered", viewport.width <= wr.width && viewport.height <= wr.height);
+
+      // Center only if it fits
+      const fits = viewport.width <= wr.width && viewport.height <= wr.height;
+      viewerInner.classList.toggle("centered", fits);
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.imageSmoothingEnabled = true;
       await page.render({ canvasContext: ctx, viewport }).promise;
+
       const paper = mmPerPointFromPaper(base.width, base.height);
-      setStatus(`${paper.warn ? "⚠" : "✓"} ${paper.note} · ${base.width.toFixed(0)}×${base.height.toFixed(0)} pt`, paper.warn ? "warn" : "ok");
+      const zPct = Math.round(zoomLevel * 100);
+      setStatus(
+        `${paper.warn ? "⚠" : "✓"} ${paper.note} · ${zPct}%`,
+        paper.warn ? "warn" : "ok"
+      );
       refreshOverlay();
     }
 
     async function loadPdf(file) {
-      resetMeasure(); setStatus("Laden…");
+      resetMeasure(); zoomLevel = 1; setStatus("Laden…");
       pdfDoc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
       pageSelect.innerHTML = "";
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         const o = document.createElement("option");
-        o.value = i; o.textContent = `${i} / ${pdfDoc.numPages}`;
+        o.value = i; o.textContent = `${i}/${pdfDoc.numPages}`;
         pageSelect.appendChild(o);
       }
       pageNum = 1; pageSelect.value = "1"; pageSelect.disabled = false;
-      zoomSelect.value = "fit"; userZoom = "fit"; zoomSelect.disabled = false;
       canvas.style.display = "block"; emptyState.style.display = "none";
       viewerInner.classList.remove("centered");
-      setMode("measure"); // start in measure mode after loading
+      setMode("measure");
       await render();
     }
 
-    // ── DRAG POINTS (only in measure mode) ──
+    // ── DRAG ──
     let dragging = null;
-    const grabOffset = { x: 0, y: 0 };
+    const grabOff = { x: 0, y: 0 };
 
     function startDrag(which, ev) {
       if (mode !== "measure") return;
@@ -503,18 +571,17 @@
       const pt = which === 'A' ? ptA : ptB;
       el.classList.add("dragging");
       el.setPointerCapture(ev.pointerId);
-      // Offset: keep crosshair center offset from pointer so finger doesn't cover it
-      const pointerPt = cssToPt(ev.clientX, ev.clientY);
-      grabOffset.x = pt.xPt - pointerPt.xPt;
-      grabOffset.y = pt.yPt - pointerPt.yPt;
+      const pp = cssToPt(ev.clientX, ev.clientY);
+      grabOff.x = pt.xPt - pp.xPt;
+      grabOff.y = pt.yPt - pp.yPt;
     }
 
     document.addEventListener("pointermove", ev => {
       if (!dragging || !page) return;
-      const pointerPt = cssToPt(ev.clientX, ev.clientY);
-      const newPt = { xPt: pointerPt.xPt + grabOffset.x, yPt: pointerPt.yPt + grabOffset.y };
-      if (dragging === 'A') { ptA = newPt; positionPoint(ptAEl, newPt.xPt, newPt.yPt); }
-      else { ptB = newPt; positionPoint(ptBEl, newPt.xPt, newPt.yPt); }
+      const pp = cssToPt(ev.clientX, ev.clientY);
+      const np = { xPt: pp.xPt + grabOff.x, yPt: pp.yPt + grabOff.y };
+      if (dragging === 'A') { ptA = np; positionPoint(ptAEl, np.xPt, np.yPt); }
+      else { ptB = np; positionPoint(ptBEl, np.xPt, np.yPt); }
       drawLine(); updateKpis();
     });
 
@@ -527,23 +594,21 @@
     ptAEl.addEventListener("pointerdown", ev => startDrag('A', ev));
     ptBEl.addEventListener("pointerdown", ev => startDrag('B', ev));
 
-    // ── CLICK TO PLACE (only in measure mode) ──
+    // ── CLICK TO PLACE ──
     viewerWrap.addEventListener("pointerdown", ev => {
-      if (mode !== "measure") return; // navigate mode: let browser handle scroll/zoom
+      if (mode !== "measure") return;
       if (!pdfDoc || !page || ev.target.closest(".mpoint")) return;
-
       const pt = cssToPt(ev.clientX, ev.clientY);
       if (!ptA) {
         ptA = pt; ptAEl.style.display = "block"; positionPoint(ptAEl, pt.xPt, pt.yPt);
         clearBtn.disabled = false;
-        setStatus("Punkt A ✓ – tippe Punkt B", "ok"); return;
+        setStatus("A ✓ – tippe B", "ok"); return;
       }
       if (!ptB) {
         ptB = pt; ptBEl.style.display = "block"; positionPoint(ptBEl, pt.xPt, pt.yPt);
         drawLine(); updateKpis();
-        setStatus("Punkte verschiebbar · Wechsle zu Navigieren zum Zoomen", "ok"); return;
+        setStatus("Ziehe Punkte zum Anpassen", "ok"); return;
       }
-      // Both placed: move the closer one
       const dA = Math.hypot(pt.xPt - ptA.xPt, pt.yPt - ptA.yPt);
       const dB = Math.hypot(pt.xPt - ptB.xPt, pt.yPt - ptB.yPt);
       if (dA <= dB) { ptA = pt; positionPoint(ptAEl, pt.xPt, pt.yPt); }
@@ -551,13 +616,12 @@
       drawLine(); updateKpis();
     });
 
-    // ── Standard events ──
+    // ── EVENTS ──
     fileInput.addEventListener("change", e => {
       const f = e.target.files?.[0];
-      if (f) loadPdf(f).catch(err => { console.error(err); setStatus("Fehler – HTTPS nutzen", "warn"); });
+      if (f) loadPdf(f).catch(err => { console.error(err); setStatus("Fehler – HTTPS", "warn"); });
     });
-    pageSelect.addEventListener("change", async () => { pageNum = +pageSelect.value; resetMeasure(); await render(); });
-    zoomSelect.addEventListener("change", async () => { userZoom = zoomSelect.value; await render(); });
+    pageSelect.addEventListener("change", async () => { pageNum = +pageSelect.value; resetMeasure(); zoomLevel = 1; await render(); });
     paperPreset.addEventListener("change", () => { if (pdfDoc) render().catch(console.error); });
     customW.addEventListener("input", () => { if (paperPreset.value === "custom" && pdfDoc) render().catch(console.error); });
     customH.addEventListener("input", () => { if (paperPreset.value === "custom" && pdfDoc) render().catch(console.error); });
@@ -565,7 +629,7 @@
 
     clearBtn.addEventListener("click", () => {
       resetMeasure();
-      if (pdfDoc) setStatus("Zurückgesetzt – tippe zwei neue Punkte", "ok");
+      if (pdfDoc) setStatus("Zurückgesetzt", "ok");
     });
 
     copyBtn.addEventListener("click", async () => {
@@ -580,10 +644,9 @@
     });
 
     let rt;
-    window.addEventListener("resize", () => { if (pdfDoc) { clearTimeout(rt); rt = setTimeout(() => render().catch(console.error), 120); } });
+    window.addEventListener("resize", () => { if (pdfDoc) { clearTimeout(rt); rt = setTimeout(() => render().catch(console.error), 150); } });
     viewerWrap.addEventListener("scroll", () => { if (ptA || ptB) refreshOverlay(); });
 
-    // Start in navigate mode
     setMode("navigate");
   </script>
 </body>
